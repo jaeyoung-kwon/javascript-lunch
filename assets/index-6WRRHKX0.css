@@ -85,6 +85,48 @@ body {
   object-fit: contain;
 }
 
+.restaurant-tab-container {
+  display: flex;
+  border-bottom: 3px solid #ddd;
+  position: relative;
+
+  margin: 32px 16px;
+}
+
+.restaurant-tab {
+  flex: 1;
+  text-align: center;
+  padding: 12px 0;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #888;
+  position: relative;
+}
+
+.restaurant-tab.active {
+  color: #e1581b; /* 선택된 탭 색상 */
+}
+
+.restaurant-tab-underline {
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  height: 3px;
+  background-color: #e1581b;
+  width: 50%;
+  transition: left 0.3s ease-in-out;
+}
+
+.restaurant-tab-container[data-active='all'] .restaurant-tab-underline {
+  left: 0;
+}
+
+/* 두 번째 탭 선택 시 */
+.restaurant-tab-container[data-active='favorite'] .restaurant-tab-underline {
+  left: 50%;
+}
+
 /* 음식점 목록 *****************************************/
 
 /* 카테고리/정렬 필터 */
@@ -93,7 +135,6 @@ body {
   justify-content: space-between;
 
   padding: 0 16px;
-  margin-top: 24px;
 }
 
 .restaurant-filter-container select {
@@ -123,6 +164,17 @@ body {
 .restaurant {
   display: flex;
   align-items: flex-start;
+  position: relative;
+
+  padding: 16px 8px;
+
+  border-bottom: 1px solid #e9eaed;
+}
+
+.restaurant-detail-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 
   padding: 16px 8px;
 
@@ -172,6 +224,27 @@ body {
   text-overflow: ellipsis;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+}
+
+.restaurant__link {
+  text-decoration: underline;
+}
+
+.restaurant__favorite-button {
+  width: 34px;
+  height: 34px;
+  position: absolute;
+  top: 14px;
+  right: 8px;
+
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.restaurant__favorite-button--detail {
+  top: 32px;
+  right: 16px;
 }
 
 /* 음식점 추가 모달 *****************************************/
