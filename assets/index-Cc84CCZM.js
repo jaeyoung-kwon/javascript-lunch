@@ -9,7 +9,7 @@ var __privateGet = (obj, member, getter) => (__accessCheck(obj, member, "read fr
 var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
 var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), setter ? setter.call(obj, value) : member.set(obj, value), value);
 var __privateMethod = (obj, member, method) => (__accessCheck(obj, member, "access private method"), method);
-var _restaurants, _filter, _Restaurants_instances, filterByCategory_fn, sortByOption_fn, _onFilterChange, _FilterController_instances, bindEvents_fn, _ModalController_instances, renderModalContent_fn, attachCancelEvent_fn, attachFormSubmitEvent_fn, attachDetailModalEvents_fn, _restaurants2, _onToggleFavorite, _onSelectRestaurant, _RestaurantListController_instances, bindEvents_fn2, _container, _currentTab, _onTabChange, _TabController_instances, bindEvents_fn3, _AppController_instances, onTabChange_fn, onFilterChange_fn, addRestaurantItem_fn;
+var _storage, _restaurants, _filter, _Restaurants_instances, filterByCategory_fn, sortByOption_fn, _onFilterChange, _FilterController_instances, bindEvents_fn, _onAddRestaurant, _onRemoveRestaurant, _onToggleFavorite, _ModalController_instances, renderModalContent_fn, bindAddModalEvents_fn, bindDetailModalEvents_fn, _restaurants2, _onToggleFavorite2, _onSelectRestaurant, _RestaurantListController_instances, bindEvents_fn2, _container, _currentTab, _onTabChange, _TabController_instances, bindEvents_fn3, _AppController_instances, onTabChange_fn, onFilterChange_fn, addRestaurantItem_fn;
 (function polyfill() {
   const relList = document.createElement("link").relList;
   if (relList && relList.supports && relList.supports("modulepreload")) {
@@ -110,13 +110,26 @@ function Header({ title, right }) {
     ]
   });
 }
-class Restaurants {
-  constructor() {
+const LocalStorage = {
+  getItem(key) {
+    const localItem = localStorage.getItem(key);
+    return localItem ? JSON.parse(localItem) : null;
+  },
+  setItem(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+  },
+  removeItem(key) {
+    localStorage.removeItem(key);
+  }
+};
+const _Restaurants = class _Restaurants {
+  constructor(storage) {
     __privateAdd(this, _Restaurants_instances);
+    __privateAdd(this, _storage);
     __privateAdd(this, _restaurants);
     __privateAdd(this, _filter);
-    const localRestaurants = localStorage.getItem("restaurants");
-    __privateSet(this, _restaurants, localRestaurants ? JSON.parse(localRestaurants) : []);
+    __privateSet(this, _storage, storage);
+    __privateSet(this, _restaurants, __privateGet(this, _storage).getItem(_Restaurants.STORAGE_KEY) ?? []);
     __privateSet(this, _filter, { category: "all", sort: "latest" });
   }
   get items() {
@@ -124,17 +137,17 @@ class Restaurants {
   }
   addRestaurant(restaurant) {
     __privateGet(this, _restaurants).push(restaurant);
-    localStorage.setItem("restaurants", JSON.stringify(__privateGet(this, _restaurants)));
+    __privateGet(this, _storage).setItem(_Restaurants.STORAGE_KEY, __privateGet(this, _restaurants));
   }
   removeRestaurant(restaurantName) {
     __privateSet(this, _restaurants, __privateGet(this, _restaurants).filter((restaurant) => restaurant.name !== restaurantName));
-    localStorage.setItem("restaurants", JSON.stringify(__privateGet(this, _restaurants)));
+    __privateGet(this, _storage).setItem(_Restaurants.STORAGE_KEY, __privateGet(this, _restaurants));
   }
   toggleFavoriteRestaurant(restaurantName) {
     const restaurant = __privateGet(this, _restaurants).find((restaurant2) => restaurant2.name === restaurantName);
     if (restaurant) {
       restaurant.isFavorite = !restaurant.isFavorite;
-      localStorage.setItem("restaurants", JSON.stringify(__privateGet(this, _restaurants)));
+      __privateGet(this, _storage).setItem(_Restaurants.STORAGE_KEY, __privateGet(this, _restaurants));
     }
   }
   getRestaurantByFilter(type, value) {
@@ -145,7 +158,8 @@ class Restaurants {
   getFavoriteRestaurants() {
     return __privateGet(this, _restaurants).filter((restaurant) => restaurant.isFavorite);
   }
-}
+};
+_storage = new WeakMap();
 _restaurants = new WeakMap();
 _filter = new WeakMap();
 _Restaurants_instances = new WeakSet();
@@ -166,6 +180,8 @@ sortByOption_fn = function(restaurants) {
     return a.distance - b.distance;
   });
 };
+__publicField(_Restaurants, "STORAGE_KEY", "restaurants");
+let Restaurants = _Restaurants;
 function $(selector, element = document) {
   return element.querySelector(selector);
 }
@@ -524,6 +540,104 @@ function RestaurantDetailModalContent({ restaurant }) {
     ]
   });
 }
+class ModalController {
+  constructor(onAddRestaurant, onRemoveRestaurant, onToggleFavorite) {
+    __privateAdd(this, _ModalController_instances);
+    __publicField(this, "modal");
+    __publicField(this, "content");
+    __publicField(this, "open");
+    __publicField(this, "close");
+    __privateAdd(this, _onAddRestaurant);
+    __privateAdd(this, _onRemoveRestaurant);
+    __privateAdd(this, _onToggleFavorite);
+    const { modal, open, close } = Modal({});
+    this.modal = modal;
+    this.open = open;
+    this.close = close;
+    __privateSet(this, _onAddRestaurant, onAddRestaurant);
+    __privateSet(this, _onRemoveRestaurant, onRemoveRestaurant);
+    __privateSet(this, _onToggleFavorite, onToggleFavorite);
+  }
+  renderModal() {
+    const main = $("main");
+    main == null ? void 0 : main.appendChild(this.modal);
+  }
+  openRestaurantAddModal() {
+    const restaurantAddModalContent = RestaurantAddModalContent();
+    __privateMethod(this, _ModalController_instances, renderModalContent_fn).call(this, restaurantAddModalContent);
+    __privateMethod(this, _ModalController_instances, bindAddModalEvents_fn).call(this);
+    this.open();
+  }
+  openRestaurantDetailModal(restaurant) {
+    const restaurantDetailModalContent = RestaurantDetailModalContent({ restaurant });
+    __privateMethod(this, _ModalController_instances, renderModalContent_fn).call(this, restaurantDetailModalContent);
+    __privateMethod(this, _ModalController_instances, bindDetailModalEvents_fn).call(this, restaurant);
+    this.open();
+  }
+}
+_onAddRestaurant = new WeakMap();
+_onRemoveRestaurant = new WeakMap();
+_onToggleFavorite = new WeakMap();
+_ModalController_instances = new WeakSet();
+renderModalContent_fn = function(content) {
+  this.content = content;
+  const modalContainer = $(".modal-container");
+  if (modalContainer) {
+    modalContainer == null ? void 0 : modalContainer.replaceWith(content);
+  } else {
+    this.modal.appendChild(content);
+  }
+};
+bindAddModalEvents_fn = function() {
+  const closeButton = $("#restaurantAddModalCancelButton");
+  closeButton == null ? void 0 : closeButton.addEventListener("click", () => this.close());
+  const form = $("form");
+  form == null ? void 0 : form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const formElement = form;
+    const formData = new FormData(formElement);
+    const data = Object.fromEntries(formData.entries());
+    __privateGet(this, _onAddRestaurant).call(this, data);
+    formElement.reset();
+    this.close();
+  });
+};
+bindDetailModalEvents_fn = function(restaurant) {
+  var _a;
+  (_a = this.content) == null ? void 0 : _a.addEventListener("click", (event) => {
+    const target = event.target;
+    const favoriteButton = target.closest(".restaurant__favorite-button");
+    const deleteButton = target.closest(".button--secondary");
+    const closeButton = target.closest(".button--primary");
+    if (favoriteButton) {
+      __privateGet(this, _onToggleFavorite).call(this, restaurant.name);
+      favoriteButton.replaceWith(FavoriteButton({ isFavorite: restaurant.isFavorite, isDetail: true }));
+      const listRestaurantElement = $(`.restaurant[data-id="${restaurant.name}"]`);
+      if (listRestaurantElement) {
+        const listFavoriteButton = $(".restaurant__favorite-button", listRestaurantElement);
+        listFavoriteButton == null ? void 0 : listFavoriteButton.replaceWith(FavoriteButton({ isFavorite: restaurant.isFavorite }));
+      }
+    }
+    if (closeButton) {
+      this.close();
+    }
+    if (deleteButton) {
+      __privateGet(this, _onRemoveRestaurant).call(this, restaurant.name);
+      this.close();
+    }
+  });
+};
+function RestaurantEmptyText() {
+  return createDOMElement({
+    tag: "div",
+    class: "empty-restaurant-text-container",
+    children: createDOMElement({
+      tag: "h3",
+      class: "empty-restaurant-text",
+      textContent: "음식점이 존재하지 않습니다."
+    })
+  });
+}
 function RestaurantItem({ restaurant }) {
   return createDOMElement({
     tag: "li",
@@ -579,114 +693,41 @@ const RestaurantListView = {
     const main = $("main");
     const container = RestaurantListContainer({ restaurants });
     main == null ? void 0 : main.appendChild(container);
+    this.updateList(restaurants);
   },
   updateList(restaurants) {
-    const restaurantListDOM = $(".restaurant-list");
+    const container = $(".restaurant-list-container");
     const newRestaurantList = RestaurantList({ restaurants });
-    restaurantListDOM == null ? void 0 : restaurantListDOM.replaceWith(newRestaurantList);
+    const restaurantEmptyText = RestaurantEmptyText();
+    const addListElement = restaurants.length !== 0 ? newRestaurantList : restaurantEmptyText;
+    container == null ? void 0 : container.replaceChildren(addListElement);
   },
   addItem(restaurant) {
     const list = $(".restaurant-list");
     if (list) {
       const item = RestaurantItem({ restaurant });
       list.appendChild(item);
+    } else {
+      this.updateList([restaurant]);
     }
   },
   removeItem(restaurantName) {
     const target = $(`.restaurant[data-id="${restaurantName}"]`);
     target == null ? void 0 : target.remove();
-  }
-};
-class ModalController {
-  constructor() {
-    __privateAdd(this, _ModalController_instances);
-    __publicField(this, "modal");
-    __publicField(this, "content");
-    __publicField(this, "open");
-    __publicField(this, "close");
-    const { modal, open, close } = Modal({});
-    this.modal = modal;
-    this.open = open;
-    this.close = close;
-  }
-  renderModal() {
-    const main = $("main");
-    main == null ? void 0 : main.appendChild(this.modal);
-  }
-  openRestaurantAddModal(addRestaurantItem) {
-    const restaurantAddModalContent = RestaurantAddModalContent();
-    __privateMethod(this, _ModalController_instances, renderModalContent_fn).call(this, restaurantAddModalContent);
-    __privateMethod(this, _ModalController_instances, attachCancelEvent_fn).call(this);
-    __privateMethod(this, _ModalController_instances, attachFormSubmitEvent_fn).call(this, addRestaurantItem);
-    this.open();
-  }
-  openRestaurantDetailModal(restaurant, restaurantsModel) {
-    const restaurantDetailModalContent = RestaurantDetailModalContent({ restaurant });
-    __privateMethod(this, _ModalController_instances, renderModalContent_fn).call(this, restaurantDetailModalContent);
-    __privateMethod(this, _ModalController_instances, attachDetailModalEvents_fn).call(this, restaurant, restaurantsModel);
-    this.open();
-  }
-}
-_ModalController_instances = new WeakSet();
-renderModalContent_fn = function(content) {
-  this.content = content;
-  const modalContainer = $(".modal-container");
-  if (modalContainer) {
-    modalContainer == null ? void 0 : modalContainer.replaceWith(content);
-  } else {
-    this.modal.appendChild(content);
-  }
-};
-attachCancelEvent_fn = function() {
-  const closeButton = $("#restaurantAddModalCancelButton");
-  closeButton == null ? void 0 : closeButton.addEventListener("click", this.close);
-};
-attachFormSubmitEvent_fn = function(addRestaurantItem) {
-  const form = $("form");
-  form == null ? void 0 : form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const formElement = form;
-    const formData = new FormData(formElement);
-    const data = Object.fromEntries(formData.entries());
-    addRestaurantItem(data);
-    formElement.reset();
-    this.close();
-  });
-};
-attachDetailModalEvents_fn = function(restaurant, restaurantsModel) {
-  var _a;
-  (_a = this.content) == null ? void 0 : _a.addEventListener("click", (event) => {
-    const target = event.target;
-    const favoriteButton = target.closest(".restaurant__favorite-button");
-    const deleteButton = target.closest(".button--secondary");
-    const closeButton = target.closest(".button--primary");
-    if (favoriteButton) {
-      restaurantsModel.toggleFavoriteRestaurant(restaurant.name);
-      favoriteButton.replaceWith(FavoriteButton({ isFavorite: restaurant.isFavorite, isDetail: true }));
-      const listRestaurantElement = $(`.restaurant[data-id="${restaurant.name}"]`);
-      if (listRestaurantElement) {
-        const listFavoriteButton = $(".restaurant__favorite-button", listRestaurantElement);
-        listFavoriteButton == null ? void 0 : listFavoriteButton.replaceWith(FavoriteButton({ isFavorite: restaurant.isFavorite }));
-      }
+    const list = $(".restaurant-list");
+    if ((list == null ? void 0 : list.children.length) === 0) {
+      list.replaceWith(RestaurantEmptyText());
     }
-    if (closeButton) {
-      this.close();
-    }
-    if (deleteButton) {
-      restaurantsModel.removeRestaurant(restaurant.name);
-      this.close();
-      RestaurantListView.removeItem(restaurant.name);
-    }
-  });
+  }
 };
 class RestaurantListController {
   constructor(restaurants, onToggleFavorite, onSelectRestaurant) {
     __privateAdd(this, _RestaurantListController_instances);
     __privateAdd(this, _restaurants2);
-    __privateAdd(this, _onToggleFavorite);
+    __privateAdd(this, _onToggleFavorite2);
     __privateAdd(this, _onSelectRestaurant);
     __privateSet(this, _restaurants2, restaurants);
-    __privateSet(this, _onToggleFavorite, onToggleFavorite);
+    __privateSet(this, _onToggleFavorite2, onToggleFavorite);
     __privateSet(this, _onSelectRestaurant, onSelectRestaurant);
   }
   render() {
@@ -699,9 +740,12 @@ class RestaurantListController {
   addItem(restaurant) {
     RestaurantListView.addItem(restaurant);
   }
+  removeItem(restaurantName) {
+    RestaurantListView.removeItem(restaurantName);
+  }
 }
 _restaurants2 = new WeakMap();
-_onToggleFavorite = new WeakMap();
+_onToggleFavorite2 = new WeakMap();
 _onSelectRestaurant = new WeakMap();
 _RestaurantListController_instances = new WeakSet();
 bindEvents_fn2 = function() {
@@ -715,7 +759,7 @@ bindEvents_fn2 = function() {
     const selectedRestaurant = __privateGet(this, _restaurants2).find((restaurant) => restaurant.name === restaurantName);
     if (selectedRestaurant) {
       if (restaurantFavoriteButton) {
-        __privateGet(this, _onToggleFavorite).call(this, selectedRestaurant.name);
+        __privateGet(this, _onToggleFavorite2).call(this, selectedRestaurant.name);
         restaurantFavoriteButton.replaceWith(FavoriteButton({ isFavorite: selectedRestaurant.isFavorite }));
       } else {
         __privateGet(this, _onSelectRestaurant).call(this, selectedRestaurant);
@@ -802,15 +846,26 @@ class AppController {
     this.filterController = new FilterController((type, value) => {
       __privateMethod(this, _AppController_instances, onFilterChange_fn).call(this, type, value);
     });
-    this.modalController = new ModalController();
-    this.restaurants = new Restaurants();
+    this.modalController = new ModalController(
+      (restaurant) => {
+        __privateMethod(this, _AppController_instances, addRestaurantItem_fn).call(this, restaurant);
+      },
+      (restaurantName) => {
+        this.restaurants.removeRestaurant(restaurantName);
+        this.restaurantListController.removeItem(restaurantName);
+      },
+      (restaurantName) => {
+        this.restaurants.toggleFavoriteRestaurant(restaurantName);
+      }
+    );
+    this.restaurants = new Restaurants(LocalStorage);
     this.restaurantListController = new RestaurantListController(
       this.restaurants.items,
       (restaurantName) => {
         this.restaurants.toggleFavoriteRestaurant(restaurantName);
       },
       (restaurant) => {
-        this.modalController.openRestaurantDetailModal(restaurant, this.restaurants);
+        this.modalController.openRestaurantDetailModal(restaurant);
       }
     );
   }
@@ -826,7 +881,7 @@ class AppController {
     const header = Header({
       title: "점심 뭐 먹지",
       right: PlusButton({
-        onclick: () => this.modalController.openRestaurantAddModal((data) => __privateMethod(this, _AppController_instances, addRestaurantItem_fn).call(this, data))
+        onclick: () => this.modalController.openRestaurantAddModal()
       })
     });
     body == null ? void 0 : body.prepend(header);
