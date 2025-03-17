@@ -735,12 +735,15 @@ class RestaurantListController {
     __privateMethod(this, _RestaurantListController_instances, bindEvents_fn2).call(this);
   }
   updateList(restaurants) {
+    __privateSet(this, _restaurants2, restaurants);
     RestaurantListView.updateList(restaurants);
   }
   addItem(restaurant) {
+    __privateGet(this, _restaurants2).push(restaurant);
     RestaurantListView.addItem(restaurant);
   }
   removeItem(restaurantName) {
+    __privateGet(this, _restaurants2).filter((restaurant) => restaurant.name !== restaurantName);
     RestaurantListView.removeItem(restaurantName);
   }
 }
@@ -903,8 +906,9 @@ onFilterChange_fn = function(type, value) {
   this.restaurantListController.updateList(filteredRestaurants);
 };
 addRestaurantItem_fn = function(restaurant) {
-  this.restaurants.addRestaurant({ ...restaurant, isFavorite: false });
-  this.restaurantListController.addItem(restaurant);
+  const newRestaurant = { ...restaurant, isFavorite: false };
+  this.restaurants.addRestaurant(newRestaurant);
+  this.restaurantListController.addItem(newRestaurant);
 };
 const app = new AppController();
 app.init();
