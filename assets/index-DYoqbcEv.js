@@ -110,7 +110,7 @@ function Header({ title, right }) {
     ]
   });
 }
-const LocalStorage = {
+const LocalStorage = () => ({
   getItem(key) {
     const localItem = localStorage.getItem(key);
     return localItem ? JSON.parse(localItem) : null;
@@ -121,7 +121,7 @@ const LocalStorage = {
   removeItem(key) {
     localStorage.removeItem(key);
   }
-};
+});
 const _Restaurants = class _Restaurants {
   constructor(storage) {
     __privateAdd(this, _Restaurants_instances);
@@ -861,7 +861,7 @@ class AppController {
         this.restaurants.toggleFavoriteRestaurant(restaurantName);
       }
     );
-    this.restaurants = new Restaurants(LocalStorage);
+    this.restaurants = new Restaurants(LocalStorage());
     this.restaurantListController = new RestaurantListController(
       this.restaurants.items,
       (restaurantName) => {
